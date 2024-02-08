@@ -7,8 +7,12 @@ const AppContext = createContext();
 const AppProvider = (props) => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
-  const allMealsUrl = "https://www.themealdb.com/api/json/v1/1/search.php?s=";
-  //const randomMealUrl = "https://www.themealdb.com/api/json/v1/1/random.php";
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [favorites, setFavorites] = useState(getFavoritesFromLocalStorage());
+  const allMealsUrl = `https://www.themealdb.com/api/json/v1/1/search.php?s=${searchTerm}`;
+  const randomMealUrl = "https://www.themealdb.com/api/json/v1/1/random.php";
 
   const fetchMeals = async (url) => {
     setLoading(true);
@@ -29,11 +33,69 @@ const AppProvider = (props) => {
 
   useEffect(() => {
     fetchMeals(allMealsUrl);
-  }, []);
+  }, [allMealsUrl]);
+
+  const fetchRandomMeals = () => {
+    fetchMeals(randomMealUrl);
+  };
+
+  const selectMeal = (idMeal, favoriteMeal) => {
+    let meal;
+
+    if (favoriteMeal) {
+      meal = favorites.find((meal) => meal.idMeal === idMeal);
+    } else {
+      meal = meals.find((meal) => meal.idMeal === idMeal);
+    }
+
+    setSelectedMeal(meal);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  const addToFavorites = (idMeal) => {
+    const alreadyFavourite = favorites.find((meal) => meal.idMeal === idMeal);
+    if (alreadyFavourite) return;
+
+    const meal = meals.find((meal) => meal.idMeal === idMeal);
+
+    const updatedFavorites = [...favorites, meal];
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+  };
+
+  const removeFromFavorites = (idMeal) => {
+    const updatedFavorites = favorites.filter((meal) => meal.idMeal !== idMeal);
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+  };
+
+  function getFavoritesFromLocalStorage() {
+    let favorites = localStorage.getItem("favorites");
+
+    if (favorites) {
+      favorites = JSON.parse(localStorage.getItem("favorites"));
+    } else favorites = [];
+
+    return favorites;
+  }
 
   const data = {
-    meals: meals,
-    loading: loading,
+    meals,
+    loading,
+    setSearchTerm,
+    fetchRandomMeals,
+    showModal,
+    setShowModal,
+    selectMeal,
+    selectedMeal,
+    closeModal,
+    favorites,
+    addToFavorites,
+    removeFromFavorites,
   };
 
   return (
